@@ -1,2 +1,2 @@
-# productionize
-Python lib to productionize ML models
+# productionize - ready your Python models for production
+
