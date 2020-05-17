@@ -1,11 +1,13 @@
 # productionize - deploy ML models directly from Python [WIP]
 
 ***
+
 <p align="center">
-<code>productionize</code> is an open-source lightweight ML deployment tool.
-You can containerize, deploy and ship your model, without ever
-having to leave your beloved Python.
+<i><code>productionize</code> is an open-source lightweight ML deployment tool.<br>
+You can containerize, deploy and ship your model, without ever<br>
+having to leave your beloved Python.</i>
 </p>
+
 ***
 
 ## Installation
