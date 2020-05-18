@@ -1,4 +1,4 @@
-# productionize - deploy ML models directly from Python [WIP]
+# productionize - deploy ML models directly from Python [WIP] <img src="docs/sticker.png" width=170 align="right" />
 
 ***
 
