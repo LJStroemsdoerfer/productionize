@@ -1,6 +1,9 @@
 # productionize - deploy ML models directly from Python [WIP] <img src="docs/sticker.png" width=170 align="right" />
 
-***
+[![Version](https://img.shields.io/pypi/v/productionize.svg)](https://pypi.org/project/productionize/)
+[![License](https://img.shields.io/pypi/l/productionize.svg)](https://raw.githubusercontent.com/LJstroemsdoerfer/productionize/master/LICENSE)
+[![Status](https://img.shields.io/badge/status-stable-green.svg?maxAge=3600)](https://pypi.org/project/productionize/)
+[![macOS](https://img.shields.io/badge/macOS-stable-green.svg?maxAge=3600)](https://pypi.org/project/productionize/)
 
 <p align="center">
 <i><code>productionize</code> is an open-source lightweight ML deployment tool.<br>
