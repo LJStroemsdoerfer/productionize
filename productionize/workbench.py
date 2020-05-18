@@ -10,6 +10,33 @@ The components you need are:
 3. Minikube: as a local Kubernetes cluster https://minikube.sigs.k8s.io/
 4. Kubectl: as a Kubernetes CLI https://kubectl.docs.kubernetes.io
 
+Slots:
+--------
+wd : str
+    Stores the current working directory
+current_status : str
+    Stores the current status of the minikube cluster
+platform : str
+    Stores the platform the host is running on
+py_version : string
+    Stores the version of Python in use
+dk_installed : boolean
+    Stores if Docker is already installed
+vb_installed : boolean
+    Stores if VirtualBox is already installed
+kc_installed : boolean
+    Stores if kubectl is already installed
+mk_installed : boolean
+    Stores if minikube is already installed
+dk_prev_installed : boolean
+    Stores if Docker was already installed
+vb_prev_installed : boolean
+    Stores if VirtualBox was already installed
+kc_prev_installed : boolean
+    Stores if kubectl was already installed
+mk_prev_installed : boolean
+    Stores if minikube was already installed
+
 """
 
 # import libs
@@ -89,12 +116,12 @@ class workbench:
         The main components of the workbench are containerization and orchestration tools. I know there are
         many different tools out there, but we are using:
 
-                              Status                      Purpose
-        ---------------------------------------------------------------------
-        Docker:         installed == {dk_exists}        Containerization
-        VirtualBox:     installed == {vb_exists}        Cluster Hypervisor
-        Kubectl:        installed == {kc_exists}        Kubernetes CLI
-        Minikube:       installed == {mk_exists}        Local Kubernetes
+                  Already on machine      Purpose
+        ------------------------------------------------------
+        Docker:         {dk_exists}        Containerization
+        VirtualBox:     {vb_exists}        Cluster Hypervisor
+        Kubectl:        {kc_exists}        Kubernetes CLI
+        Minikube:       {mk_exists}        Local Kubernetes
 
 
         You can download the missing components and configure them using: workbench.setup(). Don't worry
@@ -110,9 +137,19 @@ class workbench:
 
         # print welcome message
         print(welcome_message)
+
+        # update brew before starting
+        subprocess.call('brew update'.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         
     # helper function to check if components are installed
     def __check_installed(self):
+
+        """
+        Helper method to check if components are already installed.
+
+        This function tests if the main components Docker, VirtualBox, Kubectl
+        and Minikube are already installed.
+        """
 
         # try to call docker
         try:
@@ -177,6 +214,20 @@ class workbench:
     # main function to debug
     def setup_debug(self, issue = "docker"):
 
+        """
+        main method to debug the setup() method.
+
+        This function helps to debug any issues in the setup of the
+        workbench. This method is supposed to give users some hints
+        in case something goes wrong.
+
+        Parameters
+        ----------
+        issue : string
+            indicates what component should be investigated, the default is
+            "docker", alternatives are "virtualbox", "kubectl" and "minikube".
+        """
+
         # check if issue docker:
         if issue == 'docker':
 
@@ -187,7 +238,7 @@ class workbench:
         if issue == 'virtualbox':
 
             # install virtualbox
-            subprocess.call('brew cask install virtualbox'.split())
+            subprocess.call('brew cask install virtualbox --force'.split())
         
         # check if issue kubectl
         if issue == 'kubectl':
@@ -206,6 +257,13 @@ class workbench:
 
     # helper function to install docker
     def __install_docker(self):
+
+        """
+        helper method to install Docker.
+
+        This function downloads and sets up Docker Desktop. The user can then 
+        use the Docker Desktop interface to log in.
+        """
 
         # check if Docker is already installed
         if self.dk_prev_installed:
@@ -244,12 +302,11 @@ class workbench:
             # check if it worked
             if dk_install_success:
 
-                # check the version
-                dk_version = subprocess.check_output('docker version --format "{{.Server.Version}}"'.split())
-                dk_version = '.'.join(re.findall(r'\d+', str(dk_version)))
-
                 # print message
                 print ('> Docker was successfully installed')
+
+                # update version
+                dk_version = 'log in first'
 
             # if it didn't work
             else:
@@ -263,12 +320,19 @@ class workbench:
     # helper function to install virtualbox
     def __install_virtualbox(self):
 
+        """
+        helper method to install VirtualBox.
+
+        This function downloads and sets up VirtualBox. The users can now use
+        VirtualBox to start VMs on their local machine.
+        """
+
         # check if Virtualbox is already installed
         if self.vb_prev_installed:
 
             #  collect version
             vb_version = subprocess.check_output('vboxmanage --version'.split())
-            vb_version = '.'.join(re.findall(r'\d+', str(vb_version)))
+            vb_version = '.'.join(re.findall(r'\d+', str(vb_version))[0:3])
 
         # if it is not installed already
         else:
@@ -277,7 +341,7 @@ class workbench:
             try:
 
                 # install virtualbox
-                vb_install_success = subprocess.call('brew cask install virtualbox'.split(), stdout=subprocess.DEVNULL)
+                vb_install_success = subprocess.call('brew cask install virtualbox --force'.split(), stdout=subprocess.DEVNULL)
 
                 # check if it worked
                 if vb_install_success == 0:
@@ -300,12 +364,21 @@ class workbench:
             # check if it worked
             if vb_install_success:
 
-                # check the version
-                vb_version = subprocess.check_output('vboxmanage --version'.split())
-                vb_version = '.'.join(re.findall(r'\d+', str(vb_version)))
+                # try to collect version
+                try:
 
-                # print message
-                print ('> VirtualBox was successfully installed')
+                    # check the version
+                    vb_version = subprocess.check_output('vboxmanage --version'.split())
+                    vb_version = '.'.join(re.findall(r'\d+', str(vb_version))[0:3])
+
+                    # print message
+                    print ('> VirtualBox was successfully installed')
+                
+                # handle exception
+                except:
+
+                    # stop function
+                    raise Exception('VirtualBox could not be installed, run setup_debug(issue = "virtualbox") to print detailed logs')
 
             # if it didn't work
             else:
@@ -319,11 +392,17 @@ class workbench:
     # helper function to install kubectl
     def __install_kubectl(self):
 
+        """
+        helper method to install kubectl.
+
+        This function downloads and sets up kubectl as a kubernetes-cli.
+        """
+
         # check if kubectl is already installed
         if self.kc_prev_installed:
 
             #  collect version
-            kc_version = subprocess.check_output('kubectl version'.split())
+            kc_version = subprocess.check_output('kubectl version --client=true'.split())
             kc_version = '.'.join(re.findall(r'\d+', str(kc_version))[0:2])
 
         # if it is not installed already
@@ -356,12 +435,21 @@ class workbench:
             # check if it worked
             if kc_install_success:
 
-                # check the version
-                kc_version = subprocess.check_output('kubectl version'.split())
-                kc_version = '.'.join(re.findall(r'\d+', str(kc_version))[0:2])
+                # try to catch version
+                try:
 
-                # print message
-                print ('> Kubectl was successfully installed')
+                    # check the version
+                    kc_version = subprocess.check_output('kubectl version --client=true'.split())
+                    kc_version = '.'.join(re.findall(r'\d+', str(kc_version))[0:2])
+
+                    # print message
+                    print ('> Kubectl was successfully installed')
+
+                # handle exception
+                except:
+
+                    # stop function
+                    raise Exception('Kubectl could not be installed, run setup_debug(issue = "kubectl") to print detailed logs')
 
             # if it didn't work
             else:
@@ -374,6 +462,13 @@ class workbench:
 
     # helper function to install minikube
     def __install_minikube(self):
+
+        """
+        helper method to install Minikube.
+
+        This function downloads and sets up Minikube, which is a local 
+        Kubernetes implementation.
+        """
 
         # check if minikube is already installed
         if self.mk_prev_installed:
@@ -415,12 +510,21 @@ class workbench:
             # check if it worked
             if mk_install_success:
 
-                # check the version
-                mk_version = subprocess.check_output('minikube version'.split())
-                mk_version = '.'.join(re.findall(r'\d+', str(mk_version)))
+                # try to collect version
+                try:
 
-                # print message
-                print ('> Minikube was successfully installed')
+                    # check the version
+                    mk_version = subprocess.check_output('minikube version'.split())
+                    mk_version = '.'.join(re.findall(r'\d+', str(mk_version))[0:3])
+
+                    # print message
+                    print ('> Minikube was successfully installed')
+
+                # handle exception
+                except:
+
+                    # stop function
+                    raise Exception('Minikube could not be installed, run setup_debug(issue = "minikube") to print detailed logs')
 
             # if it didn't work
             else:
@@ -433,6 +537,20 @@ class workbench:
 
     # main function to setup the workbench
     def setup(self, report = True):
+
+        """
+        main method to setup the workbench.
+
+        This function downloads and sets up all components necessary for the
+        workbench. The components include Docker, VirtualBox, Kubectl and
+        Minikube.
+
+        Parameters
+        ----------
+        report : boolean
+            if True a process report is printed with the progress on the
+            installation
+        """
 
         # install docker
         self.__install_docker()
@@ -471,18 +589,19 @@ class workbench:
             In case not all components could be installed, please consult the setup_debug() method. This
             method prints out the system logs when installing and configuring the components.
 
-            If Docker was newly installed, you will need to log in to start Docker Desktop and log in or
-            create an account at Dockerhub https://hub.docker.com. In case you have any questions, please
-            consult: https://www.docker.com/products/docker-desktop.
 
-            """.format(dk_exists = self.dk_prev_installed,
-                    vb_exists = self.vb_prev_installed,
-                    kc_exists = self.kc_prev_installed,
-                    mk_exists = self.mk_prev_installed,
-                    dk_version = self.dk_version,
-                    vb_version = self.vb_version,
-                    kc_version = self.kc_version,
-                    mk_version = self.mk_version)
+            ! | If Docker was newly installed, you will need to log in to start Docker Desktop and log in
+            ! | or create an account at Dockerhub https://hub.docker.com. In case you have any questions,
+            ! | please consult: https://www.docker.com/products/docker-desktop.
+
+            """.format(dk_exists = self.dk_version,
+                       vb_exists = self.vb_prev_installed,
+                       kc_exists = self.kc_prev_installed,
+                       mk_exists = self.mk_prev_installed,
+                       dk_version = self.dk_version,
+                       vb_version = self.vb_version,
+                       kc_version = self.kc_version,
+                       mk_version = self.mk_version)
 
             # print report
             print (report)
@@ -492,6 +611,21 @@ class workbench:
 
     # main function to start cluster
     def start_cluster(self, cpus = '2', memory = '2G'):
+
+        """
+        main method to start the workbench cluster
+
+        This function initiates and starts the local workbench cluster. The
+        cluster is a Kubernetes based composition of Docker, VirtualBox,
+        Kubectl and Minikube.
+
+        Parameters
+        ----------
+        cpus : string
+            indicates the number of cores the cluster can use as resources
+        memory : string
+            indicates the amount of memory the cluster can use
+        """
 
         # try to start minikube
         try:
@@ -513,6 +647,12 @@ class workbench:
 
     # main function to stop cluster
     def stop_cluster(self):
+
+        """
+        main method to stop the workbench cluster.
+
+        This function stops the running workbench cluster.
+        """
 
         # try to stop minikube
         try:
@@ -536,7 +676,30 @@ class workbench:
             raise Exception('I could not stop the cluster')
 
     # main function to uninstall workbench
-    def uninstall_workbench(self, docker = None, kubectl = None, virtualbox = None, minikube = None, report = True):
+    def uninstall(self, docker = None, kubectl = None, virtualbox = None, minikube = None, report = True):
+
+        """
+        main method to uninstall all components.
+
+        This function cleanly uninstalls all components used for the workbench.
+        The user can decide if a specific component is removed. If no input is
+        given, the components that already were present, the components are 
+        kept. For those components not present, the removal is processed.
+
+        Parameters
+        ----------
+        docker : boolean
+            indicates if docker should be removed from the machine
+        kubectl : boolean
+            indicates if kubectl should be removed from the machine
+        virtualbox : boolean
+            indicates if virtualbox should be removed from the machine
+        minikube : boolean
+            indicates if minikube should be removed from the machine
+        report : True
+            if True a process report is printed with the progress on the
+            installation
+        """
 
         # check if minikube should be deleted
         if minikube is None:
@@ -682,11 +845,12 @@ class workbench:
         # check if docker should be deleted
         if docker:
 
-            # try to delete virtualbox
+            # try to delete docker
             try:
 
-                # delete virtualbox
-                dk_deleted = subprocess.call('brew cask uninstall docker --force'.split(), stdout=subprocess.DEVNULL)
+                # delete docker
+                dk_deleted = subprocess.call('brew cask zap docker --force'.split(), stdout=subprocess.DEVNULL)
+                dk_deleted = subprocess.call('brew cask zap docker --force'.split(), stdout=subprocess.DEVNULL)
 
                 # check if it worked
                 if dk_deleted == 0:
@@ -716,13 +880,13 @@ class workbench:
             report = """
 
             Deletion Report:
-            -------------
+            ----------------
 
             This is an automatically generated report on the uninstall process of your local workbench. The set
             of components required for the workbench to work were processed as follows:
 
                         Still on machine               
-            -------------------------------------
+            --------------------------------
             Docker:         {dk_exists}       
             VirtualBox:     {vb_exists}  
             Kubectl:        {kc_exists}
