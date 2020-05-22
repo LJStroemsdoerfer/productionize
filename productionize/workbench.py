@@ -36,7 +36,8 @@ kc_prev_installed : boolean
     Stores if kubectl was already installed
 mk_prev_installed : boolean
     Stores if minikube was already installed
-
+current_projects : list
+    Stores all active projects on the workbench
 """
 
 # import libs
@@ -44,6 +45,7 @@ import subprocess
 import os
 import sys
 import re
+import warnings
 
 # setup the class
 class workbench:
@@ -138,8 +140,20 @@ class workbench:
         # print welcome message
         print(welcome_message)
 
-        # update brew before starting
-        subprocess.call('brew update'.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        # check if brew exists
+        try:
+            
+            # update brew before starting
+            subprocess.call('brew update'.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+        # if it crashed
+        except:
+
+            # raise Exception
+            raise Exception('homebrew is not installed on your machine, please install it here: https://brew.sh')
+
+        # add project slot
+        self.current_projects = []
         
     # helper function to check if components are installed
     def __check_installed(self):
@@ -644,6 +658,99 @@ class workbench:
 
             # raise exception
             raise Exception('I could not start the cluster')
+
+    # main function to open a new project
+    def open_project(self, name = None):
+
+        """
+        main method to open projects on the workbench cluster.
+
+        This function opens a new project on the workbench cluster. Technically
+        speaking, this function creates a new Kubernetes namespace.
+
+        Parameters
+        ----------
+        name : string
+            indicates the project name, but should not have spaces or any
+            separators, others than "-"
+        """
+
+        # check if project name was given
+        if name is None:
+
+            # assign default project name
+            name = 'my-project'
+
+        # try to create a new namespace
+        try:
+
+            # create new namespace
+            subprocess.call(str('kubectl create namespace ' + name).split(), stdout=subprocess.DEVNULL)
+
+            # send message
+            print (str('> Successfully created project: ' + name))
+
+            # add to list of projects
+            self.current_projects.append(name)
+        
+        # if it crashed
+        except:
+
+            # raise Exception
+            raise Exception('I could not create the new project')
+
+    # main method to delete a project
+    def delete_project(self, name = None):
+
+        """
+        main method to delete projects on the workbench cluster.
+
+        This function deletes a project on the workbench cluster. Technically
+        speaking, this function deletes a Kubernetes namespace. To do so,
+        the methods requires a project name
+
+        Parameters
+        ----------
+        name : string
+            indicates the project name, but should not have spaces or any
+            separators, others than "-"
+        """
+
+        # check if name was given
+        if name is None:
+
+            # break function
+            raise Exception('You need to provide a name for the project you want to delete')
+        
+        # if name was provided
+        else:
+
+            # try to delete the project
+            try:
+
+                # delete project    
+                subprocess.call(str('kubectl delete namespaces ' + name), stdout=subprocess.DEVNULL)
+
+                # print message
+                print (str('> Successfully deleted project: ' + name))
+
+            # handle exception
+            except:
+
+                # raise Exception
+                raise Exception('I could not delete the project')
+
+            # try to delete project out of list
+            try:
+
+                # delete project out of list
+                self.current_projects.remove(name)
+            
+            # handle exception
+            except:
+
+                # print warning
+                warnings.warn('I could not find the project in self.current_projects')
 
     # main function to stop cluster
     def stop_cluster(self):

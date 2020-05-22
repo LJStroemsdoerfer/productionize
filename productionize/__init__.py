@@ -1,5 +1,5 @@
 # define the version
-__version__ = '0.0.1'
+__version__ = '0.0.3'
 
 # expose the classes
 from productionize.workbench import workbench
