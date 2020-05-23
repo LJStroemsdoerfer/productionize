@@ -680,6 +680,12 @@ class workbench:
 
             # assign default project name
             name = 'my-project'
+        
+        # if name was given
+        else:
+
+            # ensure the name complies with standards
+            name = name.replace('_', '-').replace('/', '-')
 
         # try to create a new namespace
         try:
