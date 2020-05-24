@@ -38,6 +38,10 @@ mk_prev_installed : boolean
     Stores if minikube was already installed
 current_projects : list
     Stores all active projects on the workbench
+cpus_used : string
+    Stores the CPUs allocated to the workbench
+memory_used : string
+    Stores the memory allocated to the workbench
 """
 
 # import libs
@@ -90,6 +94,10 @@ class workbench:
         self.vb_version = None
         self.kc_version = None
         self.mk_version = None
+
+        # store memory usage
+        self.cpus_used = None
+        self.memory_used = None
 
         # welcome message
         welcome_message = """
@@ -650,6 +658,10 @@ class workbench:
             # update status
             self.current_status = 'running'
 
+            # update resource usage
+            self.cpus_used = cpus
+            self.memory_used = memory
+
         # handle exception
         except:
 
@@ -704,6 +716,49 @@ class workbench:
 
             # raise Exception
             raise Exception('I could not create the new project')
+    
+    # main method to list all current projects
+    def list_projects(self):
+
+        """
+        main method to list all projects on the workbench cluster.
+
+        This function lists all projects that are currently on the workbench.
+        """
+
+        # print list with all projects on the workbench
+        return self.current_projects
+
+    # main method to list all products in project
+    def list_products(self, project):
+
+        """
+        main method to list all products in a projec.
+
+        This function lists all products that are currently deployed in a
+        project on the workbench.
+
+        Parameters
+        ----------
+        project : string
+            String that gives the name of the project, for which products should be listed
+        """
+
+        # try to list all products
+        try:
+
+            # retrieve list of products
+            command = str("kubectl get pods --template=\'{{range .items}}{{.metadata.name}}{{","}}{{end}}\' -n " + project)
+            product_list = os.popen(command).read()
+
+            # return product list
+            return product_list
+
+        # handle exception
+        except:
+
+            # print message
+            print (str('It seems that there are no products deployed for your project: ' + project))
 
     # main method to delete a project
     def delete_project(self, name = None):
@@ -757,6 +812,78 @@ class workbench:
 
                 # print warning
                 warnings.warn('I could not find the project in self.current_projects')
+
+    # main function to give status report on cluster
+    def inspect(self):
+
+        """
+        main method to build a status report on cluster.
+
+        This function builds a report on the current workbench. It shows how
+        many products, projects and resources are bound.
+        """
+
+        # check if all components are running
+        self.__check_installed()
+
+        # calculate number of projects
+        project_counter = len(self.current_projects)
+
+        # initialize product counter
+        product_counter = 0
+
+        # loop over all projects to count products
+        for project in self.current_projects:
+
+            # get the products deployed
+            products_in_project = self.list_products(project = project)
+            
+            # split in list and count length
+            product_counter = product_counter + len(products_in_project.split(','))
+
+            # return
+            return product_counter
+
+        # build report
+        report = """
+
+        Workbench Report:
+        -----------------
+
+        This is an automatically generated report on your workbench. Your
+        workbench consists of four main components:
+
+                              Status                     Version
+        ---------------------------------------------------------------------
+        Docker:         installed == {dk_exists}        {dk_version}
+        VirtualBox:     installed == {vb_exists}        {vb_version}
+        Kubectl:        installed == {kc_exists}        {kc_version}
+        Minikube:       installed == {mk_exists}        {mk_version}
+
+        You are running this session with Python {python_version}. Your machine
+        has {number_cores}. In total you allocated the following resources to
+        the workbench:
+
+        Cores:      {cpus_used}
+        Memory:     {memory_used}
+
+        Your workbench is currently hosting {product_counter} product in 
+        {project_counter} project(s).
+
+        """.format(operating_system = self.platform,
+                   python_version = self.py_version,
+                   number_cores = os.cpu_count(),
+                   dk_exists = self.dk_installed,
+                   vb_exists = self.vb_installed,
+                   kc_exists = self.kc_installed,
+                   mk_exists = self.mk_installed,
+                   cpus_used = self.cpus_used,
+                   memory_used = self.memory_used,
+                   project_counter = project_counter,
+                   product_counter = product_counter)
+
+        # print report
+        print (report)
 
     # main function to stop cluster
     def stop_cluster(self):
