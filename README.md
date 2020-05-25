@@ -22,7 +22,7 @@ However, working with Docker, Kubernetes and all these other fancy tools is not 
 The workflow with <code>productionize</code> is very simple. First, you develop your API in Python. Next, <code>productionize</code> allows you easily setup a local Kubernetes cluster that allows you to test your API. In <code>productionize</code>, this local Kubernetes cluster is called a workbench, because it is Kubernetes, with a little extra stuff to help you work. Next, you deploy your API. You don't have to change your standard API script for that, <code>productionize</code> will handle that for you. Within a matter of seconds, your API is built into a container and deployed to your workbench. Here you can test your API and see if it works. If you are happy with it, you can simply export the container and deploy it to any Kubernetes cluster you like. 
 
 <p align="center">
-  <img src="docs/prod_workflow.png" width="500">
+  <img src="docs/prod_workflow.png" width="700">
 </p>
 
 
