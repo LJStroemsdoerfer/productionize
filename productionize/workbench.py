@@ -790,7 +790,7 @@ class workbench:
             try:
 
                 # delete project    
-                subprocess.call(str('kubectl delete namespaces ' + name), stdout=subprocess.DEVNULL)
+                subprocess.call(str('kubectl delete namespaces ' + name).split(), stdout=subprocess.DEVNULL)
 
                 # print message
                 print (str('> Successfully deleted project: ' + name))

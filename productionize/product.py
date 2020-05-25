@@ -77,10 +77,24 @@ class product:
         Status:     {status}
 
         With the product class you can easily deploy your python API, without
-        leaving python. The product class is capable of building and deploying 
-        Docker containers on your workbench. In addition, the class provides 
-        out-of-the-box functionalities to extract and push your container to
-        any registry you want.
+        leaving python. You first have to prepare the deployment, which will
+        trigger the build of a Dockerfile in your current working directory:
+
+            # initialize the class
+            your_api = product()
+
+            # prepare the deployment
+            your_api.prepare_deployment(api_file = "/path/api.py",
+                                        requirements_file = "/path/requirements.txt",
+                                        port = "8000",
+                                        name = "my-deployment")
+        
+        Then you can simply deploy your API using your_api.deploy(). I split
+        the deployment process in two parts, so that you are able to adjust
+        the Dockerfile, if you need to.
+
+        If you want to delete the a deployment, you can just use delete_deployment().
+        In case you want to update a deployment, just prepare and then deploy again.
 
         """.format(project = self.project_name,
                    status = self.current_status)
@@ -329,7 +343,7 @@ class product:
         try:
             
             # run deployment
-            command = str('kubectl run ' + self.product_name + " --image=kubipy-image:latest --image-pull-policy='Never' -n " + self.project_name)
+            command = str('kubectl run ' + self.product_name + ' --image=' + self.product_name + "-image:latest --image-pull-policy='Never' -n " + self.project_name)
             os.system(command)
 
         # handle exception
