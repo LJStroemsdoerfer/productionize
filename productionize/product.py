@@ -388,7 +388,7 @@ class product:
         try:
 
             # expose the service on minikube
-            command = str('minikube service ' + self.product_name + '-n ' + self.project_name + ' --url')
+            command = str('minikube service ' + self.product_name + ' -n ' + self.project_name + ' --url')
             service_url = subprocess.check_output(command.split())
 
             # decode url
@@ -407,7 +407,7 @@ class product:
             raise Exception('I could not expose the service to your host machine. Make sure the workbench is properly setup.')
 
     # helper function to check if deployment exists
-    def __check_pods(self):
+    def __check_pods(self, product, project):
 
         """
         Private method to check if a pod exists.
@@ -419,7 +419,7 @@ class product:
         try:
 
             # check for service
-            command = str('kubectl get pod ' + self.product_name + ' -n' + self.project_name)
+            command = str('kubectl get pod ' + product + ' -n' + project)
             exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
 
             # check result
@@ -439,6 +439,100 @@ class product:
 
             # return False
             return False
+
+    # helper function to check if service exists
+    def __check_svcs(self, product, project):
+
+        """
+        Private method to check if a svc exists.
+
+        This function checks, if a svc already exists on Minikube.
+        """
+
+        # try to check if service exists
+        try:
+
+            # check for service
+            command = str('kubectl get services ' + product + ' -n' + project)
+            exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+
+            # check result
+            if exists == 0:
+
+                # return False
+                return True
+            
+            # if not 0, then False
+            else:
+
+                # return False
+                return False
+        
+        # if it breaks, it doesn't exist
+        except:
+
+            # return False
+            return False
+
+    # helper function to delete pod
+    def __delete_pod(self, product, project):
+
+        """
+        Main method to delete pod.
+
+        This function deletes the pods of specific products and all
+        Minikube artifacts with it.
+
+        Parameters
+        ----------
+        product : string
+            String that gives the name of the product deployment that should be deleted
+        project : string
+            String that gives the name of the project in which the product should be deleted
+        """
+
+        # try to delete pod
+        try:
+
+            # delete the pod
+            command = str('kubectl delete pod ' + product + ' -n ' + project)
+            subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+
+        # handle exception
+        except:
+
+            # raise exception
+            raise Exception('I could not delete the pod for deployment: ' + self.product_name)
+
+    # helper function to delete service
+    def __delete_services(self, product, project):
+
+        """
+        Main method to delete services.
+
+        This function deletes the services of specific products and all
+        Minikube artifacts with it.
+
+        Parameters
+        ----------
+        product : string
+            String that gives the name of the product deployment that should be deleted
+        project : string
+            String that gives the name of the project in which the product should be deleted
+        """
+
+        # try to delete service
+        try:
+
+            # delete the service
+            command = str('kubectl delete service ' + product + ' -n ' + project)
+            subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+
+        # handle exception
+        except:
+
+            # raise exception
+            raise Exception('I could not delete the service for deployment: ' + self.product_name)    
 
     # main method to delete products
     def delete_deployment(self, product, project):
@@ -460,13 +554,29 @@ class product:
         # try to delete the product deployment
         try:
 
-            # delete the service
-            command = str('kubectl delete service ' + product + ' -n ' + project)
-            subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+            # check if pod exists
+            if self.__check_pods(product = product, project = project):
 
-            # delete the pod
-            command = str('kubectl delete pod ' + product + ' -n ' + project)
-            subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+                # delete the pod
+                self.__delete_pod(product = product, project = project)
+
+            # if it does not exist
+            else:
+
+                # print message
+                print ('There is no pod for your deployment: ' + product)
+
+            # check if service exists
+            if self.__check_svcs(product = product, project = project):
+
+                # delete the pod
+                self.__delete_pod(product = product, project = project)
+            
+            # if it does not exist
+            else:
+
+                # print message
+                print ('There is no service for your deployment: ' + product)
 
         # handle exception
         except:
@@ -493,13 +603,21 @@ class product:
         self.__build_image()
 
         # check if already exists
-        exists_already = self.__check_pods()
+        pod_exists_already = self.__check_pods(product = self.product_name, project = self.project_name)
+        svc_exists_already = self.__check_svcs(product = self.product_name, project = self.project_name)
 
-        # if it already exists delete it
-        if exists_already:
+        # if pod already exists delete it
+        if pod_exists_already:
 
             # delete product 
-            self.delete_deployment(product = self.product_name,
+            self.__delete_pod(product = self.product_name,
+                              project = self.project_name)
+
+        # if service already exists delete it
+        if svc_exists_already:
+
+            # delete service
+            self.__delete_services(product = self.product_name,
                                    project = self.project_name)
 
         # run deployment

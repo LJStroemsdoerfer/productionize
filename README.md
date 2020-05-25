@@ -27,6 +27,10 @@ of the library are it's three main classes, those can be imported as follows:
     # import lib
     from productionize import workbench, product
 
+The library contains two major classes. The first one is the <code>workbench()</code> class. This class allows you to setup and manage a proper ML workbench on your local machine. The second one is the <code>product()</code> class. This class allows you to deploy your ML APIs to the local workbench and to any Kubernetes cluster.
+
+### The <code>workbench()</code> class
+
 Once the main classes are sourced, you can setup your very own workbench on your local machine. The workbench consists of several tools:
 
 <ul>
@@ -36,7 +40,7 @@ Once the main classes are sourced, you can setup your very own workbench on your
     <li>Minikube: a local implemenation of Kubernetes. Minikube runs on a VM, which is administrated by Virtualbox.</li> 
 </ul>
 
-To setup the workbench, these tools need to be installed. You can do this, by simple running the setup() method of the workbench class. Once initiated you can call the method.
+To setup the workbench, these tools need to be installed. You can do this, by simple running the <code>setup()</code> method of the workbench class. Once initiated you can call the method.
 
     # initiate class
     cluster = workbench()
@@ -56,22 +60,131 @@ Next you will have to sign in. If you don't have an account already, you can cre
   <img src="docs/sign_in.png" width="500">
 </p>
 
-Once you did this, you are good to go on. You can now start the cluster using the start_cluster() method. This method allows you to set the resource quota for the cluster. Default are two CPUs and 2GB of memory.
+Once you did this, you are good to go on. You can now start the cluster using the <code>start_cluster()</code> method. This method allows you to set the resource quota for the cluster. Default are two CPUs and 2GB of memory.
 
     # start the cluster
     cluster.start_cluster(cpus = '2', memory = '2G')
 
-To stop the cluster you can simply use the stop_cluster() method. This one just idles the cluster, but doesn't remove all the components.
+When the cluster is running, you can create a project. This helps to have a clean and well-structured cluster running. You can do this with the <code>open_project()</code> method.
+
+    # open project
+    cluster.open_project(name = "my-project")
+
+In case you want to delete the project you can use the <code>delete_project()</code> method. Technically, the projects are namespaces on Kubernetes.
+
+    # delete project
+    cluster.delete_project(name = "my-project")
+
+To stop the cluster you can simply use the <code>stop_cluster()</code> method. This one just idles the cluster, but doesn't remove all the components.
 
     # stop the cluster
     cluster.stop_cluster()
 
-To cleanly uninstall all the components, you can just run the uninstall() method and even specify which components to delete. The default is, that the components that existed on your machine before will be not removed.
+To cleanly uninstall all the components, you can just run the <code>uninstall()</code> method and even specify which components to delete. The default is, that the components that existed on your machine before will be not removed.
 
     # cleanly uninstall cluster components
     cluster.uninstall(docker = None, kubectl = None, virtualbox = None, minikube = None, report = True)
 
+### The <code>product()</code> class
 
+While the <code>workbench</code> class mainly concerns the infrastructure management, the <code>product</code> class deals with your API. The <code>product</code> class turns your API into a deployable product. Once you have an API programmed, for instance with Flask, the <code>product</code> class will do the rest for you. 
 
+Let's consider the following python script containing a Flask API:
 
+    #!flask/bin/python
+    from flask import Flask
+
+    app = Flask(__name__)
+
+    @app.route('/hello')
+    def index():
+        return "Hello, World!"
+
+    if __name__ == '__main__':
+        app.run(port = '8000', host = '0.0.0.0')
+
+You can, of course, create any kind of API you like. You can also add new routes or whatever you need. To deploy an API to Kubernetes, you would typically need to containerize the API. <code>productionize</code> does that for you. The <code>product</code> class contains the <code>prepare_deployment()</code> method. This method produces a Dockerfile from your API script and a requirements file.
+
+    # initiate the class and say which project the product belongs to
+    my_api = product(project = "my-project")
+
+    # prepare the deployment
+    my_api.prepare_deployment(api_file = "path_to/api.py",  # path to the api file
+                              requirements_file = "path_to/requirements.txt", # path to the req file
+                              port = "8000", # the port your API is exposed to
+                              name = "my-product") # the name you want to give your product
+
+<p align = "center" style="font-size:9px">
+Note: I would advise to not do any directory stunts here. The code in this library is flexible, however, it might be a bit tricky.
+</p>
+
+Once you run the <code>prepare_deployment()</code> method, <code>productionize</code> will build a Dockerfile in your current working directory.
+
+<p align="center">
+  <img src="docs/dk_in_path.png" width="200">
+</p>
+
+You can, of course, modify and edit the Dockerfile. However, at your own risk. If you intend to work in an enterprise context it might be necessary to change permissions within the container. This does not have an effect on <code>productionize</code>. Per default, <code>productionize</code> containers run with root.
+
+    FROM python:3.7.7
+    RUN mkdir -p /api
+    COPY api.py /api/api.py
+    COPY requirements.txt /api/requirements.txt
+    RUN python -m pip install -r /api/requirements.txt
+    EXPOSE 8000
+    ENTRYPOINT ["python", "api/api.py"] 
+
+Once you ran the <code>prepare_deployment()</code> method, you can deploy your api to the workbench. Why would you do this? Well, the workbench should serve as your local test environment. Using the deploy() method, you can easily deploy your "product" to the workbench. 
+
+    my_api.deploy()
+
+Per default <code>deploy()</code> does not take any arguments. Those are not necessary as all info is stored in the my_api object after <code>prepare_deployment</code>. Once your product is deployed, the method will return the url under which you can reach your API. However, don't forget to add your custom routes.
+
+Your output should look somewhat like this:
+
+    >>> my_api.deploy()
+
+        Deployment Report:
+        ------------------
+
+        This is an automatically generated report on the status of your deployed
+        product. Your API is now containerized and hosted on the workbench. You
+        can access the API using:
+
+        http://XXX.XXX.XX.XXX:XXXXX/<your_route>
+
+        You can call the API in whatever way it is designed. If you want to get
+        rid of it, just use the delete_deployment() method. If you just want to
+        update the API, you can just use prepare_deployment() to create a new
+        Dockerfile and then deploy() again.
+
+                  Your Product
+        -----------------------
+        Name:       my-product
+        Project:    my-project
+        Status:     deployed and healthy
+        Access:     http://XXX.XXX.XX.XXX:XXXXX/<your_route>
+
+        If you want to export the image to your local machine just use the
+        export_product() method. If you want to push it to another registry,
+        you can use the push_product() method.
+
+Now you know how to reach your API. In case you find out it doesn't work and you change something on the code, you can just re-run <code>prepare_deployment()</code> and then <code>deploy()</code>. The <code>deploy()</code> will automatically realize that the "product" has already been deployed and will just update the existing one. In case you want to delete a product, you can just use the <code>delete_deployment()</code> method. 
+
+    # delete product
+    my_api.delete_deployment(product = "my-product", project = "my-project")
+
+When you are satisfied with your API, you might want to deploy or ship it to an enterprise-ready or collaborative cluster. As the workbench is at the heart a Kubernetes cluster, everything you do on the workbench, will work on any other cluster. To give you the freedom of choice, <code>productionize</code> implements two methods to deploy anywhere.
+
+The first one is <code>export_product()</code>. This method exports the product from the workbench in form of a Docker image and stores it on your local machine's docker registry. You can run your standard docker commands in your local machine's context and you will see the image as <code>product-name-image</code>. In the example above, this will be <code>my-product-image</code>.
+
+    # export the product to your local machine
+    my_api.export_product(product = "my-product")
+
+The second one is <code>push_product()</code>. This method pushes the product in form of a Docker image to any registry you want. Default is DockerHub. However, you can select any registry you like. In case of secure registries, you will need credentials or a token. Those will be asked from you with a prompt.
+
+    # push the product
+    my_api.push_product(product = "my-product", registry = "my.registry:5000/image-name")
+
+This method will automatically tag the image and run <code>docker push</code> to push the image to any remote industry.
 
