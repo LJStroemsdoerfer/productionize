@@ -208,3 +208,35 @@ The second one is <code>push_product()</code>. This method pushes the product in
     my_api.push_product(product = "my-product", registry = "my.registry:5000/image-name")
 
 This method will automatically tag the image and run <code>docker push</code> to push the image to any remote industry.
+
+## Next Steps
+
+<code>productionize</code> is far from ready and is still work in progress. I started this project around mid of May 2020, when I was super annoyed when I had to built up a new test cluster on my local machine, cause I messed up the others too much. As this all started with me sitting on my Mac, this project is <b>at the moment only stable on macOS</b>. I already started to work on other UNIX systems, however Windows might take a bit of time. So the next steps are the following:
+
+### Release 1.0
+
+<ol>
+    <li>Functional Features:</li>
+        <ol>
+            <li>Ease the export of products from workbench to local machine</li>
+            <li>Integrate the push feature to external cluster registries</li>
+        </ol>
+    <li>Non-functional Features:</li>
+        <ol>
+            <li>Update unit testing for product() class</li>
+        </ol>
+</ol>
+
+### Release 2.0
+
+<ol>
+    <li>Functional Features:</li>
+        <ol>
+            <li>Add workbench management feature</li>
+        </ol>
+    <li>Non-functional Features:</li>
+        <ol>
+            <li>Support latest Ubuntu version</li>
+            <li>Support latest CentOS version</li>
+        </ol>
+</ol>
