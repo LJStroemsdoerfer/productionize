@@ -13,6 +13,21 @@ having to leave your beloved Python.</i>
 
 ***
 
+## <code>productionize</code> in a nutshell
+
+What does it do? Well, it does exactly what the catchy library name says it does. <code>productionize</code> helps you to productionize your API. As a Data Scientist, most of the projects I worked on face issue when productionizing code. Often, the code is not tested, standardized or environment agnostic enough to just deploy something somewhere. This where containers come in very handy. Containerization helps you to freeze the environment and decouple your model or just your code from the host system. This makes deployment much, much easier. 
+
+However, working with Docker, Kubernetes and all these other fancy tools is not as simple as one might hope. The good news though, some steps can be automated and this is exactly what <code>productionize</code> does. As Data Scientist you can focus on your model and the containerization and deployment is handled by <code>productionize</code>. 
+
+The workflow with <code>productionize</code> is very simple. First, you develop your API in Python. Next, <code>productionize</code> allows you easily setup a local Kubernetes cluster that allows you to test your API. In <code>productionize</code>, this local Kubernetes cluster is called a workbench, because it is Kubernetes, with a little extra stuff to help you work. Next, you deploy your API. You don't have to change your standard API script for that, <code>productionize</code> will handle that for you. Within a matter of seconds, your API is built into a container and deployed to your workbench. Here you can test your API and see if it works. If you are happy with it, you can simply export the container and deploy it to any Kubernetes cluster you like. 
+
+<p align="center">
+  <img src="docs/prod_workflow.png" width="500">
+</p>
+
+
+That way, <code>productionize</code> makes it super easy to turn your local API into a production-ready container and the best part: you don't even have to leave Python.
+
 ## Installation
 
 <code>productionize</code> is a Python library, which is hosted on PyPi. Currently, the functions are only supported on <b>macOS</b>. On the <b>darwin</b> platform you can therefore download the package using <code>pip</code>.
@@ -40,6 +55,12 @@ Once the main classes are sourced, you can setup your very own workbench on your
     <li>Minikube: a local implemenation of Kubernetes. Minikube runs on a VM, which is administrated by Virtualbox.</li> 
 </ul>
 
+Technically, the components are ensembled in a simple fashion. However, the only specialty is, that Minikube is installed on top of VirtualBox.
+
+<p align="center">
+  <img src="docs/workbench_architecture.png" width="500">
+</p>
+
 To setup the workbench, these tools need to be installed. You can do this, by simple running the <code>setup()</code> method of the workbench class. Once initiated you can call the method.
 
     # initiate class
@@ -54,7 +75,7 @@ To fire up the entire workbench, you first need to login to Docker Desktop. This
   <img src="docs/install_docker.png" width="500">
 </p>
 
-Next you will have to sign in. If you don't have an account already, you can create one for free at <a href="https://hub.docker.com>"Docker Hub</a>. Which is a lot like GitHub, just for containers.
+Next you will have to sign in. If you don't have an account already, you can create one for free at <a href="https://hub.docker.com>">Docker Hub</a>. Which is a lot like GitHub, just for containers.
 
 <p align="center">
   <img src="docs/sign_in.png" width="500">
@@ -187,4 +208,3 @@ The second one is <code>push_product()</code>. This method pushes the product in
     my_api.push_product(product = "my-product", registry = "my.registry:5000/image-name")
 
 This method will automatically tag the image and run <code>docker push</code> to push the image to any remote industry.
-
