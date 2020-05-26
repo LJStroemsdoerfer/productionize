@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# sketch file
+docs/sticker_base.sketch
+
 # Mac files
 .DS_Store
 
