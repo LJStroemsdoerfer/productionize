@@ -3,7 +3,7 @@ from setuptools import setup
 import productionize
 
 # read in README.md
-with open("README.md", "r") as fh:
+with open("description.md", "r") as fh:
     long_description = fh.read()
 
 # catch the version
