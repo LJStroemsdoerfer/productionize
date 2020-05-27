@@ -133,7 +133,13 @@ Once you ran the <code>prepare_deployment()</code> method, you can deploy your a
 
     my_api.deploy()
 
-Per default <code>deploy()</code> does not take any arguments. Those are not necessary as all info is stored in the my_api object after <code>prepare_deployment</code>. Once your product is deployed, the method will return the url under which you can reach your API. However, don't forget to add your custom routes.
+Per default <code>deploy()</code> does not take any arguments. Those are not necessary as all info is stored in the my_api object after <code>prepare_deployment</code>. However, if you want, you can also deploy your product on your localhost.
+Technically speaking, this will just create Docker container that runs on localhost. This can be acheived with the local arg
+in the method call.
+
+    my_api.deploy(local = True)
+
+Once your product is deployed, the method will return the url under which you can reach your API. However, don't forget to add your custom routes.
 
 Your output should look somewhat like this:
 
@@ -164,19 +170,14 @@ Your output should look somewhat like this:
         export_product() method. If you want to push it to another registry,
         you can use the push_product() method.
 
-Now you know how to reach your API. In case you find out it doesn't work and you change something on the code, you can just re-run <code>prepare_deployment()</code> and then <code>deploy()</code>. The <code>deploy()</code> will automatically realize that the "product" has already been deployed and will just update the existing one. In case you want to delete a product, you can just use the <code>delete_deployment()</code> method. 
+Now you know how to reach your API. In case you find out it doesn't work and you change something on the code, you can just re-run <code>prepare_deployment()</code> and then <code>deploy()</code>. The <code>deploy()</code> will automatically realize that the "product" has already been deployed and will just update the existing one. In case you want to delete a product, you can just use the <code>delete_deployment()</code> method. This will also work for local deployments.
 
     # delete product
     my_api.delete_deployment(product = "my-product", project = "my-project")
 
-When you are satisfied with your API, you might want to deploy or ship it to an enterprise-ready or collaborative cluster. As the workbench is at the heart a Kubernetes cluster, everything you do on the workbench, will work on any other cluster. To give you the freedom of choice, <code>productionize</code> implements two methods to deploy anywhere.
+When you are satisfied with your API, you might want to deploy or ship it to an enterprise-ready or collaborative cluster. As the workbench is at the heart a Kubernetes cluster, everything you do on the workbench, will work on any other cluster. To give you the freedom of choice, <code>productionize</code> implements a method to deploy anywhere.
 
-The first one is <code>export_product()</code>. This method exports the product from the workbench in form of a Docker image and stores it on your local machine's docker registry. You can run your standard docker commands in your local machine's context and you will see the image as <code>product-name-image</code>. In the example above, this will be <code>my-product-image</code>.
-
-    # export the product to your local machine
-    my_api.export_product(product = "my-product")
-
-The second one is <code>push_product()</code>. This method pushes the product in form of a Docker image to any registry you want. Default is DockerHub. However, you can select any registry you like. In case of secure registries, you will need credentials or a token. Those will be asked from you with a prompt.
+This is the <code>push_product()</code> method. This method pushes the product in form of a Docker image to any registry you want. Default is DockerHub. However, you can select any registry you like. In case of secure registries, you will need credentials or a token. Those will be asked from you with a prompt.
 
     # push the product
     my_api.push_product(product = "my-product", registry = "my.registry:5000/image-name")

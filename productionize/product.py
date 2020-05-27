@@ -10,6 +10,22 @@ wd : string
     Current working directory
 current_status : string
     Current status of the product
+py_version : string
+    Python version in use in the current session
+product_name : string
+    Name of your product to deploy
+project_name : string
+    Name of your project on the workbench
+api_file : string
+    Contains the path to the api_file that should be used
+requirements_file : string
+    Contains the path to the requirements_file that should be used
+port : string
+    Contains the port the API should be exposed to
+service_url : string
+    Contains the url to reach your service
+local : boolean
+    If True, the product will be deployed on localhost
 """
 
 # import libs
@@ -21,7 +37,7 @@ import sys
 class product:
 
     # describe the class
-    def __init__(self, project = None):
+    def __init__(self, name = None, project = None):
 
         # store working directory
         self.wd = os.getcwd()
@@ -37,6 +53,15 @@ class product:
         # write to slot
         self.py_version = str(major_v + '.' + minor_v + '.' + micro_v)
 
+        # check if product name was given
+        if name is None:
+
+            # give default name
+            name = 'my-product'
+    
+        # store name in self
+        self.product_name = name.replace('_', '-').replace('/', '-')
+
         # check if project name was given
         if project is None:
 
@@ -44,7 +69,7 @@ class product:
             project = 'my-project'
 
         # store project name
-        self.project_name = project
+        self.project_name = project.replace('_', '-').replace('/', '-')
 
         # store path to api file
         self.api_file = None
@@ -55,11 +80,11 @@ class product:
         # store port to deploy
         self.port = None
 
-        # store product name
-        self.product_name = None
-
         # store service url
         self.service_url = None
+
+        # store if local deployment
+        self.local = None
     
         # build report
         report = """
@@ -159,7 +184,7 @@ class product:
             raise Exception(str('I could not create the Dockerfile in your current working directory: ' + self.wd))
 
     # main function to deploy API
-    def prepare_deployment(self, api_file, requirements_file, port, name = None):
+    def prepare_deployment(self, api_file, requirements_file, port):
 
         """
         Main method to prepare the deployment.
@@ -242,16 +267,7 @@ class product:
 
             # raise exception
             raise Exception('port arg should be a string with the desired exposing port: e.g. port = "8000"')
-
-        # check if name was provided
-        if name is None:
-
-            # give default name
-            name = 'my-product'
         
-        # store name in self
-        self.product_name = name.replace('_', '-').replace('/', '-')
-
         # build Dockerfile
         self.__build_dockerfile()
 
@@ -307,23 +323,38 @@ class product:
         print (report)
 
     # helper method to create Dockerfile
-    def __build_image(self):
+    def __build_image(self, local):
         """
         Private method to build a Docker image.
 
         This function takes the Dockerfile and creates an image on the Minikube
         internal registry.
+
+        Parameters
+        ----------
+        local : boolean
+            If True, the image is build locally
         """
 
         # try to create the image on the minikube registry
         try:
-
-            # make this is run from wd
+        
+            # make sure this is run from wd
             os.chdir(self.wd)
 
-            # build image from Dockerfile
-            command = str('eval $(minikube -p minikube docker-env) && docker build -t ' + self.product_name + '-image:latest .')
-            os.system(command)
+            # check if local build
+            if not local:
+                
+                # build image from Dockerfile
+                command = str('eval $(minikube -p minikube docker-env) && docker build -t ' + self.product_name + '-image:latest .')
+                os.system(command)
+
+            # if local build
+            else:
+
+                # build image from Dockerfile
+                command = str('docker build -t ' + self.product_name + '-image:latest .')
+                os.system(command)
 
         # handle exception
         except:
@@ -332,19 +363,34 @@ class product:
             raise Exception('I could not build the Docker image from the Dockerfile. In case you edited the file, please check if that was correct.')
 
     # helper method to run a deployment
-    def __run_deployment(self):
+    def __run_deployment(self, local):
         """
         Private method to run a deployment.
 
         This function uses kubectl to run a deployment on minikube.
+
+        Parameters
+        ----------
+        local : boolean
+            If True, the product is deployed locally instead of on the workbench
         """
 
         # try to run deployment
         try:
             
-            # run deployment
-            command = str('kubectl run ' + self.product_name + ' --image=' + self.product_name + "-image:latest --image-pull-policy='Never' -n " + self.project_name)
-            os.system(command)
+            # check if local deployment
+            if not local:
+
+                # run deployment
+                command = str('kubectl run ' + self.product_name + ' --image=' + self.product_name + "-image:latest --image-pull-policy='Never' -n " + self.project_name)
+                os.system(command)
+            
+            # if local true
+            else:
+
+                # run container
+                command = str('docker run -p ' + self.port + ':' + self.port + ' --name ' + self.product_name + ' ' + self.product_name + '-image')
+                os.system(command)
 
         # handle exception
         except:
@@ -413,6 +459,13 @@ class product:
         Private method to check if a pod exists.
 
         This function checks, if a pod already exists on Minikube.
+
+        Parameters
+        ----------
+        product : string
+            String with the name of the product
+        project : string
+            String with the name of the project
         """
 
         # try to check if service exists
@@ -447,6 +500,13 @@ class product:
         Private method to check if a svc exists.
 
         This function checks, if a svc already exists on Minikube.
+
+        Parameters
+        ----------
+        product : string
+            String with the name of the product
+        project : string
+            String with the name of the project
         """
 
         # try to check if service exists
@@ -454,6 +514,45 @@ class product:
 
             # check for service
             command = str('kubectl get services ' + product + ' -n' + project)
+            exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+
+            # check result
+            if exists == 0:
+
+                # return False
+                return True
+            
+            # if not 0, then False
+            else:
+
+                # return False
+                return False
+        
+        # if it breaks, it doesn't exist
+        except:
+
+            # return False
+            return False
+
+    # helper function to check if container exists
+    def __check_container(self, product):
+
+        """
+        Private method to check if a container exists.
+
+        This function checks, if a container already exists on localhost.
+
+        Parameters
+        ----------
+        product : string
+            String with the name of the product
+        """
+
+        # try to check if container exists
+        try:
+
+            # check for service
+            command = str('docker container inspect ' + product)
             exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
 
             # check result
@@ -496,13 +595,13 @@ class product:
 
             # delete the pod
             command = str('kubectl delete pod ' + product + ' -n ' + project)
-            subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+            subprocess.call(command.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
         # handle exception
         except:
 
             # raise exception
-            raise Exception('I could not delete the pod for deployment: ' + self.product_name)
+            raise Exception('I could not delete the pod for deployment: ' + product)
 
     # helper function to delete service
     def __delete_services(self, product, project):
@@ -526,13 +625,44 @@ class product:
 
             # delete the service
             command = str('kubectl delete service ' + product + ' -n ' + project)
+            subprocess.call(command.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+        # handle exception
+        except:
+
+            # raise exception
+            raise Exception('I could not delete the service for deployment: ' + product)    
+
+    # helper function to delete docker container
+    def __delete_container(self, product):
+
+        """
+        Main method to delete container.
+
+        This function deletes the a locally running Docker container
+
+        Parameters
+        ----------
+        product : string
+            String that gives the name of the product deployment that should be deleted
+        """
+
+        # try to delete a container
+        try:
+
+            # stop the container
+            command = str('docker stop ' + product)
+            subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+
+            # rm container
+            command = str('docker rm ' + product)
             subprocess.call(command.split(), stdout=subprocess.DEVNULL)
 
         # handle exception
         except:
 
             # raise exception
-            raise Exception('I could not delete the service for deployment: ' + self.product_name)    
+            raise Exception('I could not delete the container for deployment: ' + product)
 
     # main method to delete products
     def delete_deployment(self, product, project):
@@ -554,29 +684,47 @@ class product:
         # try to delete the product deployment
         try:
 
-            # check if pod exists
-            if self.__check_pods(product = product, project = project):
+            # check if local deployment
+            if not self.local:
 
-                # delete the pod
-                self.__delete_pod(product = product, project = project)
+                # check if pod exists
+                if self.__check_pods(product = product, project = project):
 
-            # if it does not exist
+                    # delete the pod
+                    self.__delete_pod(product = product, project = project)
+
+                # if it does not exist
+                else:
+
+                    # print message
+                    print ('There is no pod for your deployment: ' + product)
+
+                # check if service exists
+                if self.__check_svcs(product = product, project = project):
+
+                    # delete the pod
+                    self.__delete_services(product = product, project = project)
+
+                # if it does not exist
+                else:
+
+                    # print message
+                    print ('There is no service for your deployment: ' + product)
+
+            # if local
             else:
 
-                # print message
-                print ('There is no pod for your deployment: ' + product)
+                # check if the container exists
+                if self.__check_container(product = product):
 
-            # check if service exists
-            if self.__check_svcs(product = product, project = project):
+                    # delete the container
+                    self.__delete_container(product = product)
 
-                # delete the pod
-                self.__delete_pod(product = product, project = project)
-            
-            # if it does not exist
-            else:
+                # if it does not exist
+                else:
 
-                # print message
-                print ('There is no service for your deployment: ' + product)
+                    # print message
+                    print ('There is no container for your deployment: ' + product)
 
         # handle exception
         except:
@@ -585,84 +733,185 @@ class product:
             raise Exception(str('I could not delete the deployment of your product: ' + product))
 
     # main method to deploy product
-    def deploy(self):
+    def deploy(self, local = False):
 
         """
         Main method to deploy the product.
 
-        This function takes the Dockerfile and deploys it to the workbench.
-        """
+        This function takes the Dockerfile and deploys it to the workbench. The
+        user can also choose to just run the container locally.
 
+        Parameters
+        ----------
+        local : boolean
+            if set to True, the product is build locally and not deployed to
+            the workbench.
+        """
         # check if product is already prepared
         if self.dk_file_path is None:
 
             # raise Exception
             raise Exception('You first need to run prepare_deployment() before deploying your product.')
 
-        # build docker image on Minikube registry
-        self.__build_image()
+        # store local in self
+        self.local = local
 
-        # check if already exists
-        pod_exists_already = self.__check_pods(product = self.product_name, project = self.project_name)
-        svc_exists_already = self.__check_svcs(product = self.product_name, project = self.project_name)
+        # check if local build requested
+        if not self.local:
 
-        # if pod already exists delete it
-        if pod_exists_already:
+            # build docker image on Minikube registry
+            self.__build_image(local = self.local)
 
-            # delete product 
-            self.__delete_pod(product = self.product_name,
-                              project = self.project_name)
+            # check if already exists
+            pod_exists_already = self.__check_pods(product = self.product_name, project = self.project_name)
+            svc_exists_already = self.__check_svcs(product = self.product_name, project = self.project_name)
 
-        # if service already exists delete it
-        if svc_exists_already:
+            # if pod already exists delete it
+            if pod_exists_already:
 
-            # delete service
-            self.__delete_services(product = self.product_name,
-                                   project = self.project_name)
+                # delete product 
+                self.__delete_pod(product = self.product_name,
+                                project = self.project_name)
 
-        # run deployment
-        self.__run_deployment()
+            # if service already exists delete it
+            if svc_exists_already:
 
-        # expose deployment
-        self.__expose_pod()
+                # delete service
+                self.__delete_services(product = self.product_name,
+                                    project = self.project_name)
 
-        # get url
-        self.__get_url()
+            # run deployment
+            self.__run_deployment(local = local)
 
-        # change the status
-        self.current_status = 'deployed and healthy'
+            # expose deployment
+            self.__expose_pod()
 
-        # build report
-        report = """
+            # get url
+            self.__get_url()
 
-        Deployment Report:
-        ------------------
+            # change the status
+            self.current_status = 'deployed and healthy'
 
-        This is an automatically generated report on the status of your deployed
-        product. Your API is now containerized and hosted on the workbench. You
-        can access the API using:
+            # build report
+            report = """
 
-        {service_url}
+            Deployment Report:
+            ------------------
 
-        You can call the API in whatever way it is designed. If you want to get
-        rid of it, just use the delete_deployment() method. If you just want to
-        update the API, you can just use prepare_deployment() to create a new
-        Dockerfile and then deploy() again.
+            This is an automatically generated report on the status of your deployed
+            product. Your API is now containerized and hosted on the workbench. You
+            can access the API using:
 
-                  Your Product
-        -----------------------
-        Name:       {name}
-        Project:    {project}
-        Status:     {status}
-        Access:     {service_url}
+            {service_url}
 
-        If you want to export the image to your local machine just use the
-        export_product() method. If you want to push it to another registry,
-        you can use the push_product() method.
-        """.format(service_url = self.service_url,
-                   name = self.product_name,
-                   project = self.project_name,
-                   status = self.current_status)
+            You can call the API in whatever way it is designed. If you want to get
+            rid of it, just use the delete_deployment() method. If you just want to
+            update the API, you can just use prepare_deployment() to create a new
+            Dockerfile and then deploy() again.
 
-        # print report
-        print (report)
+                    Your Product
+            -----------------------
+            Name:       {name}
+            Project:    {project}
+            Status:     {status}
+            Access:     {service_url}
+
+            You are not forced to stay on your workbench though. You can use
+            the push_product() method to push the image of your product to any
+            registry you want.
+            """.format(service_url = self.service_url,
+                    name = self.product_name,
+                    project = self.project_name,
+                    status = self.current_status)
+
+            # print report
+            print (report)
+        
+        # if local build is requested
+        else:
+
+            # build the Docker image locally
+            self.__build_image(local = self.local)
+
+            # run the docker container locally
+            self.__run_deployment(local = self.local)
+
+            # change the status
+            self.current_status = 'deployed and healthy'
+
+            # construct the url
+            self.service_url = str('localhost:' + self.port)
+
+            # build report
+            report = """
+
+            Deployment Report:
+            ------------------
+
+            This is an automatically generated report on the status of your deployed
+            product. Your API is now containerized and hosted on your local machine.
+            You can access the API using:
+
+            {service_url}
+
+            You can call the API in whatever way it is designed. If you want to get
+            rid of it, just use the delete_deployment() method. If you just want to
+            update the API, you can just use prepare_deployment() to create a new
+            Dockerfile and then deploy() again.
+
+                    Your Product
+            -----------------------
+            Name:       {name}
+            Project:    {project}
+            Status:     {status}
+            Access:     {service_url}
+
+            You are not forced to stay on your local machine though. You can use
+            the push_product() method to push the image of your product to any
+            registry you want.
+            """.format(service_url = self.service_url,
+                    name = self.product_name,
+                    project = self.project_name,
+                    status = self.current_status)
+
+            # print report
+            print (report)
+
+    # main method to push product to other registry
+    def push_product(self, registry):
+        """
+        Main method to push your product.
+
+        This function pushes the docker image to any other registry. Depending
+        on the privacy setting, the user will need to login to the registry and
+        create a token first.
+
+        Parameters
+        ----------
+        registry : string
+            Gives the url to the target registry, if you just push to Dockerhub, 
+            just pass your DockerHub user name to the registry arg
+        """
+
+        # try to push to the registry
+        try:
+
+            # tag the image to a remote registry
+            command = str('eval $(minikube -p minikube docker-env) && docker tag ' + self.product_name + '-image ' + registry + '/' + self.product_name + '-image')
+            os.system(command)
+
+            # print message
+            print (str('> Successfully tagged the image as ' + registry + '/' + self.product_name + '-image'))
+
+            # tag the image to a remote registry
+            command = str('eval $(minikube -p minikube docker-env) && docker push ' + registry + '/' + self.product_name + '-image')
+            os.system(command)
+
+            # print message
+            print (str('> Successfully pushed image to ' + registry))
+
+        # handle exception    
+        except:
+
+            # raise exception
+            raise Exception('I could not push the product to another registry. Make sure you have the proper registry url and the correct credentials in case it is a private registry.')   
