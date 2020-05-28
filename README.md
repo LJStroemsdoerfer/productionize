@@ -34,6 +34,16 @@ That way, <code>productionize</code> makes it super easy to turn your local API 
 
     pip install productionize
 
+The library relies on two components, which every MacBook should already have, however in case you don't, you would need
+to install <code>xcode</code> and <code>homebrew</code>. <code>xcode</code> is a developer tool kit released by Apple for
+all their macOS based products. You can install the relevant pieces by running the following command in your terminal:
+
+    xcode-select install
+
+<code>homebrew</code> on the other hand is a package manager, that allows you to easily install and manage applications. If not for <code>productionize</code>, I would anyway recommend to use it. You can read more about it <a href="https://brew.sh">here</a>. To install <code>homebrew</code> just run the following commands in your terminal:
+
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+
 ## Usage
 
 Once the library is properly installed from PyPi, you can source it using your standard python import command. The core
