@@ -97,7 +97,7 @@ class product:
 
           Your Product
         -----------------------
-        Name:      
+        Name:       {product}
         Project:    {project}
         Status:     {status}
 
@@ -111,8 +111,7 @@ class product:
             # prepare the deployment
             your_api.prepare_deployment(api_file = "/path/api.py",
                                         requirements_file = "/path/requirements.txt",
-                                        port = "8000",
-                                        name = "my-deployment")
+                                        port = "8000")
         
         Then you can simply deploy your API using your_api.deploy(). I split
         the deployment process in two parts, so that you are able to adjust
@@ -121,7 +120,8 @@ class product:
         If you want to delete the a deployment, you can just use delete_deployment().
         In case you want to update a deployment, just prepare and then deploy again.
 
-        """.format(project = self.project_name,
+        """.format(product = self.product_name,
+                   project = self.project_name,
                    status = self.current_status)
 
         # print report
@@ -389,7 +389,7 @@ class product:
             else:
 
                 # run container
-                command = str('docker run -p ' + self.port + ':' + self.port + ' --name ' + self.product_name + ' ' + self.product_name + '-image')
+                command = str('docker run -p ' + self.port + ':' + self.port + ' -d --name ' + self.product_name + ' ' + self.product_name + '-image')
                 os.system(command)
 
         # handle exception
@@ -473,7 +473,7 @@ class product:
 
             # check for service
             command = str('kubectl get pod ' + product + ' -n' + project)
-            exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+            exists = subprocess.call(command.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
             # check result
             if exists == 0:
@@ -514,7 +514,7 @@ class product:
 
             # check for service
             command = str('kubectl get services ' + product + ' -n' + project)
-            exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+            exists = subprocess.call(command.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
             # check result
             if exists == 0:
@@ -553,7 +553,7 @@ class product:
 
             # check for service
             command = str('docker container inspect ' + product)
-            exists = subprocess.call(command.split(), stdout=subprocess.DEVNULL)
+            exists = subprocess.call(command.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
             # check result
             if exists == 0:
@@ -840,7 +840,7 @@ class product:
             self.current_status = 'deployed and healthy'
 
             # construct the url
-            self.service_url = str('localhost:' + self.port)
+            self.service_url = str('localhost:' + self.port + '/<your_route>')
 
             # build report
             report = """

@@ -50,6 +50,7 @@ import os
 import sys
 import re
 import warnings
+import time
 
 # setup the class
 class workbench:
@@ -652,8 +653,37 @@ class workbench:
         # try to start minikube
         try:
 
+            # build report
+            report = """
+
+            Starting Report:
+            ----------------
+
+            This is an automatically generated report on the starting process of your workbench cluster.
+            Your cluster will be started now. This steps involves starting up a Virtual Machine on your
+            machine and installing Minikube in this VM. Additionally, kubectl on your local machine is
+            configured to access the cluster directly.
+
+            Now follows the log trace of the starting procedure:
+
+            """
+
+            # print report
+            print (report)
+
             # start minikube
             subprocess.call(str('minikube start --driver=virtualbox --cpus=' + cpus + ' --memory=' + memory).split())
+
+            # build report
+            report = """
+
+            Your workbench is running on your machine now. as a next step, you can create a project on 
+            the workbench using the open_project() method.
+
+            """
+
+            # print report
+            print (report)
 
             # update status
             self.current_status = 'running'
@@ -1055,33 +1085,6 @@ class workbench:
                 # raise Exception
                 raise Exception('I could not delete Kubectl')
 
-        # check if virtualbox should be deleted
-        if virtualbox:
-
-            # try to delete virtualbox
-            try:
-
-                # delete virtualbox
-                vb_deleted = subprocess.call('brew cask uninstall virtualbox --force'.split(), stdout=subprocess.DEVNULL)
-
-                # check if it worked
-                if vb_deleted == 0:
-
-                    # print message
-                    print ('> Successfully deleted VirtualBox')
-
-                # if it didn't work
-                else:
-
-                    # raise Exception
-                    raise Exception('I could not delete VirtualBox')
-
-            # handle exception
-            except:
-
-                # raise Exception
-                raise Exception('I could not delete VirtualBox')
-
         # check if docker should be deleted
         if docker:
 
@@ -1109,6 +1112,36 @@ class workbench:
 
                 # raise Exception
                 raise Exception('I could not delete Docker')
+
+        # check if virtualbox should be deleted
+        if virtualbox:
+
+            # try to delete virtualbox
+            try:
+
+                # wait for 30 seconds for uninstall of minikube to be realized
+                time.sleep(30)
+
+                # delete virtualbox
+                vb_deleted = subprocess.call('brew cask uninstall virtualbox --force'.split(), stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+                # check if it worked
+                if vb_deleted == 0:
+
+                    # print message
+                    print ('> Successfully deleted VirtualBox')
+
+                # if it didn't work
+                else:
+
+                    # raise Exception
+                    warnings.warn('You need to reboot your machine to complete the uninstall of Virtualbox')
+
+            # handle exception
+            except:
+
+                # raise Exception
+                warnings.warn('You need to reboot your machine to complete the uninstall of Virtualbox')
 
         # check if they are still installed
         self.__check_installed()
