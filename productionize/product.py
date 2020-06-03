@@ -309,6 +309,8 @@ class product:
         Project:    {project}
         Status:     {status}
 
+        You can now deploy your product using the deploy() method.
+
 
         """.format(api_file = self.api_file,
                    first_line_api = first_line_api,

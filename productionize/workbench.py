@@ -778,7 +778,7 @@ class workbench:
         try:
 
             # retrieve list of products
-            command = str("kubectl get pods --template=\'{{range .items}}{{.metadata.name}}{{","}}{{end}}\' -n " + project)
+            command = str("kubectl get pods --template '{{range .items}}{{.metadata.name}}{{\",\"}}{{end}}' -n " + project)
             product_list = os.popen(command).read()
 
             # return product list
@@ -1141,7 +1141,7 @@ class workbench:
             except:
 
                 # raise Exception
-                warnings.warn('You need to reboot your machine to complete the uninstall of Virtualbox')
+                raise Exception('I could not delete VirtualBox')
 
         # check if they are still installed
         self.__check_installed()
