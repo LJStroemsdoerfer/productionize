@@ -105,13 +105,13 @@ Let's consider the following python script containing a Flask API:
 You can, of course, create any kind of API you like. You can also add new routes or whatever you need. To deploy an API to Kubernetes, you would typically need to containerize the API. <code>productionize</code> does that for you. The <code>product</code> class contains the <code>prepare_deployment()</code> method. This method produces a Dockerfile from your API script and a requirements file.
 
     # initiate the class and say which project the product belongs to
-    my_api = product(project = "my-project")
+    my_api = product(name = "my-product",
+                     project = "my-project")
 
     # prepare the deployment
     my_api.prepare_deployment(api_file = "path_to/api.py",  # path to the api file
                               requirements_file = "path_to/requirements.txt", # path to the req file
-                              port = "8000", # the port your API is exposed to
-                              name = "my-product") # the name you want to give your product
+                              port = "8000") # the port your API is exposed to
 
 <p align = "center" style="font-size:9px">
 Note: I would advise to not do any directory stunts here. The code in this library is flexible, however, it might be a bit tricky.
